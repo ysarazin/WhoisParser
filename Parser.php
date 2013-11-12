@@ -287,7 +287,7 @@ class Parser
         $Adapter = AbstractAdapter::factory($Config['adapter']);
         
         if ($Adapter instanceof AbstractAdapter) {
-            $this->rawdata = strip_tags($Adapter->call($this->Query, $Config));
+            $this->rawdata = $Adapter->call($this->Query, $Config);
             $this->parse();
         } else {
             throw AbstractException::factory('NoAdapter', 'Adapter ' . $Config['adapter'] .
