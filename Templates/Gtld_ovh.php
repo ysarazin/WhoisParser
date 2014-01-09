@@ -84,16 +84,16 @@ class Template_Gtld_ovh extends AbstractTemplate
                     $contactObject->address = $filteredAddress[1];
                     $contactObject->city = $filteredAddress[2];
                     $contactObject->country = $filteredAddress[3];
-                    $contactObject->phone = $matches[4];
-                    $contactObject->email = $matches[5];
+                    $contactObject->phone = $filteredAddress[4];
+                    $contactObject->email = $filteredAddress[5];
                 } elseif (sizeof($filteredAddress) === 7) {
                     $contactObject->organization = $filteredAddress[0];
                     $contactObject->name = $filteredAddress[1];
                     $contactObject->address = $filteredAddress[2];
                     $contactObject->city = $filteredAddress[3];
                     $contactObject->country = $filteredAddress[4];
-                    $contactObject->phone = $matches[5];
-                    $contactObject->email = $matches[6];
+                    $contactObject->phone = $filteredAddress[5];
+                    $contactObject->email = $filteredAddress[6];
                 }
             }
         }
