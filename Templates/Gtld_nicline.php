@@ -41,11 +41,11 @@ class Template_Gtld_nicline extends AbstractTemplate
 	 * @var array
 	 * @access protected
 	 */
-    protected $blocks = array(1 => '/Registrant:(.*?)(?=Administrative Contact)/is',
-            2 => '/Administrative Contact:(.*?)(?=Technical Contact)/is',
-            3 => '/Technical Contact:(.*?)(?=Domain servers in listed order)/is',
-            4 => '/Created:(.*?)(?=Expires)/is',
-            5 => '/Expires:(.*?)(?=Last updated)/is');
+    protected $blocks = array(1 => '/Registrant Name:(.*?)(?=Admin Name)/is',
+            2 => '/Admin Name:(.*?)(?=Tech Name)/is',
+            3 => '/Tech Name:(.*?)(?=Name Server)/is',
+            4 => '/Creation Date:(.*?)(?=Registrar Registration Expiration Date)/is',
+            5 => '/Registrar Registration Expiration Date:(.*?)(?=Registrar:)/is');
 
     /**
 	 * Items for each block
@@ -54,110 +54,44 @@ class Template_Gtld_nicline extends AbstractTemplate
 	 * @access protected
 	 */
     protected $blockItems = array(
-            1 => array('/Registrant:\n(?>[\x20\t]*)(.+)/is' => 'contacts:owner:address'),
-            2 => array('/Administrative Contact:\n(?>[\x20\t]*)(.+)/is' => 'contacts:admin:address'),
-            3 => array('/Technical Contact:\n(?>[\x20\t]*)(.+)/is' => 'contacts:tech:address'),
-            4 => array('/Created:(?>[\x20\t]*)(.+)$/im' => 'created'),
-            5 => array('/Expires:(?>[\x20\t]*)(.+)$/im' => 'expires'));
+            1 => array(
+                '/Registrant Name:(?>[\x20\t]*)(.+)\nRegistrant Organization:/is' => 'contacts:owner:name',
+                '/Registrant Organization:(?>[\x20\t]*)(.+)\nRegistrant Street:/is' => 'contacts:owner:organization',
+                '/Registrant Street:(?>[\x20\t]*)(.+)\nRegistrant City:/is' => 'contacts:owner:address',
+                '/Registrant City:(?>[\x20\t]*)(.+)\nRegistrant State\/Province/is' => 'contacts:owner:city',
+                '/Registrant State\/Province:(?>[\x20\t]*)(.+)\nRegistrant Postal Code:/is' => 'contacts:owner:state',
+                '/Registrant Postal Code:(?>[\x20\t]*)(.+)\nRegistrant Country:/is' => 'contacts:owner:zipcode',
+                '/Registrant Country:(?>[\x20\t]*)(.+)\nRegistrant Phone:/is' => 'contacts:owner:country',
+                '/Registrant Phone:(?>[\x20\t]*)(.+)\nRegistrant Phone Ext:/is' => 'contacts:owner:phone',
+                '/Registrant Fax:(?>[\x20\t]*)(.+)\nRegistrant Fax Ext:/is' => 'contacts:owner:fax',
+                '/Registrant Email:(?>[\x20\t]*)(.+)\nRegistry Admin ID:/is' => 'contacts:owner:email',
+            ),
+            2 => array(
+                '/Admin Name:(?>[\x20\t]*)(.+)\nAdmin Organization:/is' => 'contacts:admin:name',
+                '/Admin Organization:(?>[\x20\t]*)(.+)\nAdmin Street:/is' => 'contacts:admin:organization',
+                '/Admin Street:(?>[\x20\t]*)(.+)\nAdmin City:/is' => 'contacts:admin:address',
+                '/Admin City:(?>[\x20\t]*)(.+)\nAdmin State\/Province/is' => 'contacts:admin:city',
+                '/Admin State\/Province:(?>[\x20\t]*)(.+)\nAdmin Postal Code:/is' => 'contacts:admin:state',
+                '/Admin Postal Code:(?>[\x20\t]*)(.+)\nAdmin Country:/is' => 'contacts:admin:zipcode',
+                '/Admin Country:(?>[\x20\t]*)(.+)\nAdmin Phone:/is' => 'contacts:admin:country',
+                '/Admin Phone:(?>[\x20\t]*)(.+)\nAdmin Phone Ext:/is' => 'contacts:admin:phone',
+                '/Admin Fax:(?>[\x20\t]*)(.+)\nAdmin Fax Ext:/is' => 'contacts:admin:fax',
+                '/Admin Email:(?>[\x20\t]*)(.+)\nRegistry Tech ID:/is' => 'contacts:admin:email',
+            ),
+            3 => array(
+                '/Tech Name:(?>[\x20\t]*)(.+)\nTech Organization:/is' => 'contacts:tech:name',
+                '/Tech Organization:(?>[\x20\t]*)(.+)\nTech Street:/is' => 'contacts:tech:organization',
+                '/Tech Street:(?>[\x20\t]*)(.+)\nTech City:/is' => 'contacts:tech:address',
+                '/Tech City:(?>[\x20\t]*)(.+)\nTech State\/Province/is' => 'contacts:tech:city',
+                '/Tech State\/Province:(?>[\x20\t]*)(.+)\nTech Postal Code:/is' => 'contacts:tech:state',
+                '/Tech Postal Code:(?>[\x20\t]*)(.+)\nTech Country:/is' => 'contacts:tech:zipcode',
+                '/Tech Country:(?>[\x20\t]*)(.+)\nTech Phone:/is' => 'contacts:tech:country',
+                '/Tech Phone:(?>[\x20\t]*)(.+)\nTech Phone Ext:/is' => 'contacts:tech:phone',
+                '/Tech Fax:(?>[\x20\t]*)(.+)\nTech Fax Ext:/is' => 'contacts:tech:fax',
+                '/Tech Email:(?>[\x20\t]*)(.+)\n/is' => 'contacts:tech:email',
+            ),
+            4 => array('/Creation Date:(?>[\x20\t]*)(.+)$/im' => 'created'),
+            5 => array('/Registrar Registration Expiration Date:(?>[\x20\t]*)(.+)$/im' => 'expires')
+        );
 
-    /**
-     * After parsing do something
-     *
-     * Fix addresses
-     *
-     * @param  object &$WhoisParser
-     * @return void
-     */
-    public function postProcess(&$WhoisParser)
-    {
-        $ResultSet = $WhoisParser->getResult();
-
-        $ResultSet->created = preg_replace('/:\d\d\d/', '', $ResultSet->created);
-        $ResultSet->expires = preg_replace('/:\d\d\d/', '', $ResultSet->expires);
-        
-        foreach ($ResultSet->contacts as $contactType => $contactArray) {
-            foreach ($contactArray as $contactObject) {
-                $filteredAddress = array_map('trim', explode("\n", trim($contactObject->address)));
-
-                preg_match('/(?>[\x20\t]*)(.*)(?>[\x20\t]{1,})\((.*)\)/i', $filteredAddress[0], $matches);
-
-                if (sizeof($matches) === 0) {
-                    $contactObject->name = $filteredAddress[0];
-                } else {
-                    if (isset($matches[1])) {
-                        $contactObject->name = trim($matches[1]);
-                    }
-
-                    if (isset($matches[2])) {
-                        $contactObject->handle = trim($matches[2]);
-                    }
-                }
-
-                if ($contactType == 'owner') {
-                    $contactObject->email = $filteredAddress[1];
-                    $contactObject->email = $filteredAddress[2];
-                    $contactObject->address = $filteredAddress[3];
-
-                    preg_match('/(?>[\x20\t]*)(.*)(?>[\x20\t]{1,})(.*)/i', $filteredAddress[4], $matches);
-                    if (sizeof($matches) === 0) {
-                        $contactObject->city = $filteredAddress[4];
-                    } else {
-                        if (isset($matches[1])) {
-                            $contactObject->city = trim($matches[1]);
-                        }
-
-                        if (isset($matches[2])) {
-                            $contactObject->state = trim($matches[2]);
-                        }
-                    }
-
-                    preg_match('/(?>[\x20\t]*)(.*)(?>[\x20\t]{1,})(\w\w)/i', $filteredAddress[5], $matches);
-                    if (sizeof($matches) === 0) {
-                        $contactObject->zipcode = $filteredAddress[5];
-                    } else {
-                        if (isset($matches[1])) {
-                            $contactObject->zipcode = trim($matches[1]);
-                        }
-
-                        if (isset($matches[2])) {
-                            $contactObject->country = trim($matches[2]);
-                        }
-                    }
-
-                    $contactObject->phone = $filteredAddress[6];
-                } else {
-                    $contactObject->email = $filteredAddress[1];
-                    $contactObject->address = $filteredAddress[2];
-
-                    preg_match('/(?>[\x20\t]*)(.*)(?>[\x20\t]{1,})(.*)/i', $filteredAddress[3], $matches);
-                    if (sizeof($matches) === 0) {
-                        $contactObject->city = $filteredAddress[3];
-                    } else {
-                        if (isset($matches[1])) {
-                            $contactObject->city = trim($matches[1]);
-                        }
-
-                        if (isset($matches[2])) {
-                            $contactObject->state = trim($matches[2]);
-                        }
-                    }
-
-                    preg_match('/(?>[\x20\t]*)(.*)(?>[\x20\t]{1,})(\w\w)/i', $filteredAddress[4], $matches);
-                    if (sizeof($matches) === 0) {
-                        $contactObject->zipcode = $filteredAddress[4];
-                    } else {
-                        if (isset($matches[1])) {
-                            $contactObject->zipcode = trim($matches[1]);
-                        }
-
-                        if (isset($matches[2])) {
-                            $contactObject->country = trim($matches[2]);
-                        }
-                    }
-
-                    $contactObject->phone = $filteredAddress[5];
-                }
-            }
-        }
-    }
 }
