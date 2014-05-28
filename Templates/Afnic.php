@@ -114,24 +114,26 @@ class Template_Afnic extends AbstractTemplate
         }
         
         foreach ($ResultSet->contacts as $contactType => $contactArray) {
-            foreach ($contactArray as $contactObject) {
-                $filteredAddress = $contactObject->address;
-                
-                if ($contactType !== 'owner') {
-                    $contactObject->organization = $filteredAddress[0];
-                    $contactObject->city = end($filteredAddress);
-                    unset($filteredAddress[0]);
-                } else {
-                    $contactObject->city = end($filteredAddress);
-                }
-                
-                array_pop($filteredAddress);
-                $filteredAddress = array_values($filteredAddress);
-                
-                if (sizeof($filteredAddress) === 1) {
-                    $contactObject->address = $filteredAddress[0];
-                } else {
-                    $contactObject->address = $filteredAddress;
+	    foreach ($contactArray as $contactObject) {
+                $contactObject = clone $contactObject;
+                    if ($filteredAddress = $contactObject->address) {
+
+                    if ($contactType !== 'owner') {
+                        $contactObject->organization = $filteredAddress[0];
+                        $contactObject->city = end($filteredAddress);
+                        unset($filteredAddress[0]);
+                    } else {
+                        $contactObject->city = end($filteredAddress);
+                    }
+
+                    array_pop($filteredAddress);
+                    $filteredAddress = array_values($filteredAddress);
+
+                    if (sizeof($filteredAddress) === 1) {
+                        $contactObject->address = $filteredAddress[0];
+                    } else {
+                        $contactObject->address = $filteredAddress;
+                    }
                 }
             }
         }
